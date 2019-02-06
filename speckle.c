@@ -71,6 +71,7 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 	gfloat starCol;
 	int i;
 	gdouble points[2];
+	gdouble brushSize;
 
 	/* Setting mandatory output values */
 	*nreturn_vals = 1;
@@ -97,9 +98,10 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 	
 	srand(seed);
 	gimp_context_get_foreground(&startRGB);
+	brushSize = gimp_context_get_brush_size();
 
 	for (i = 0; i<500;i++) {
-		starX = rand() % drawableWidth;6
+		starX = rand() % drawableWidth;
 		starY = rand() % drawableHeight;
 		starCol = rand() % 128/128.0;
 		itemRGB = startRGB;
@@ -108,7 +110,7 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 		points[0] = starX;
 		points[1] = starY;
 		gimp_context_set_foreground(&itemRGB);
-		gimp_context_set_brush_size(10 + rand() % 44);
+		gimp_context_set_brush_size(brushSize + rand() % 44);
 		gimp_paintbrush_default(drawableID, 2, points);
 	}
 
