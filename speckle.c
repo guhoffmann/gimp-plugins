@@ -33,7 +33,10 @@ static void query (void) {
 		{ GIMP_PDB_INT32, "run-mode", "Run mode"},
 		{ GIMP_PDB_IMAGE, "image", "Input image"},
 		{ GIMP_PDB_DRAWABLE, "drawable", "Input drawable"},
-		{ GIMP_PDB_COLOR, "fgcolor",  "Color to draw with"}
+		{ GIMP_PDB_INT32, "numSpeckles", "Number of speckles"},
+		{ GIMP_PDB_INT32, "sizeVar", "Variation of max. size in pixels"},
+		{ GIMP_PDB_INT32, "colVar", "Variation in brightness (0-255)"},
+		{ GIMP_PDB_INT32, "seed", "Random seed"}
 	}; // of GimpParamDerf args[] = ...
 
 	gimp_install_procedure (
@@ -59,16 +62,13 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 
 	static GimpParam  values[1];
 	GimpPDBStatusType status = GIMP_PDB_SUCCESS;
-	GimpRunMode       run_mode;
-	GimpDrawable *drawable;
-	GimpRGB itemRGB;
-	gint32 drawableHeight;
-	gint32 drawableWidth;
-	gint32 imageID;
-	gint32 drawableID;
-	gint32 starX;
-	gint32 starY;
-	gdouble starCol;
+	GimpRunMode		run_mode;
+	GimpDrawable	*drawable;
+	GimpRGB			itemRGB, startRGB, workRGB;
+	guint32			drawableHeight,  drawableWidth,
+						imageID, drawableID,
+						starX, starY, seed, numSpeckles, sizeVar;
+	gfloat starCol;
 	int i;
 	gdouble points[2];
 
@@ -84,18 +84,27 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 	run_mode = param[0].data.d_int32;
 	imageID  = param[1].data.d_int32;
 	drawableID = param[2].data.d_int32;
+	numSpeckles = param[3].data.d_int32;
+	seed = param[4].data.d_int32;
 
 	drawableWidth = gimp_drawable_width(drawableID);
 	drawableHeight = gimp_drawable_height(drawableID);
 
+	/* Begin the main actions context */
+
 	gimp_context_push();
 	gimp_image_undo_group_start(imageID);
+	
+	srand(seed);
+	gimp_context_get_foreground(&startRGB);
 
-	for (i = 0; i<300;i++) {
-		starX = rand() % drawableWidth;
+	for (i = 0; i<500;i++) {
+		starX = rand() % drawableWidth;6
 		starY = rand() % drawableHeight;
-		starCol = 96 + rand() % 160;
-		gimp_rgb_set(&itemRGB, starCol/255.0, starCol/255.0, starCol/255.0);
+		starCol = rand() % 128/128.0;
+		itemRGB = startRGB;
+		gimp_rgb_set(&workRGB, starCol, starCol, starCol);
+		gimp_rgb_subtract(&itemRGB, &workRGB);
 		points[0] = starX;
 		points[1] = starY;
 		gimp_context_set_foreground(&itemRGB);
@@ -107,6 +116,9 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 	
 	gimp_context_pop();
 	gimp_displays_flush ();
+
+	/* End of main actions context */
+
 //	gimp_drawable_detach (drawableID);
 
 /*	if (run_mode != GIMP_RUN_NONINTERACTIVE) {
