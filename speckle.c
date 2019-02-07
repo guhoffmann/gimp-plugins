@@ -65,7 +65,7 @@ static void query (void) {
 		args, NULL
 	);
 
-	gimp_plugin_menu_register ("plug-in-speckle","<Image>/Uwes-Plugins");
+	gimp_plugin_menu_register ("plug-in-speckle","<Image>/Uwes-Extensions");
 
 } // of static void query(void)... ---------------------------------------------
 
@@ -106,7 +106,8 @@ static gboolean showDialog() {
 	// define widget and add adjustment to it
    numSpecklesSpin = gtk_spin_button_new (GTK_ADJUSTMENT (numSpecklesAdjustment), 1, 0);
 	// add a connector to read the value into the speckleParams struct
-	g_signal_connect (numSpecklesAdjustment, "value_changed",
+	g_signal_connect (
+		numSpecklesAdjustment, "value_changed",
    	G_CALLBACK (gimp_int_adjustment_update),
 		&speckleParams.numSpeckles
 	);
@@ -117,30 +118,44 @@ static gboolean showDialog() {
 
 	sizeVarLabel = gtk_label_new ("Size variation (0-100 pixel):");
 	gtk_container_add (GTK_CONTAINER (contentArea), sizeVarLabel);
-	sizeVarAdjustment = gtk_adjustment_new (speckleParams.sizeVar, 0, 100, 1, 5, 5);
+	sizeVarAdjustment = gtk_adjustment_new (speckleParams.sizeVar, 1, 100, 1, 5, 5);
    sizeVarSpin = gtk_spin_button_new (GTK_ADJUSTMENT (sizeVarAdjustment), 1, 0);
-	g_signal_connect (sizeVarAdjustment, "value_changed",
+	g_signal_connect (
+		sizeVarAdjustment, "value_changed",
    	G_CALLBACK (gimp_int_adjustment_update),
 		&speckleParams.sizeVar
 	);
 	gtk_container_add (GTK_CONTAINER (contentArea), sizeVarSpin);
-	// The colVar widget
+
+	// The colVar widget ////////////////////////////////////////////////////////
+
 	colVarLabel = gtk_label_new ("Intensity variation (0-255):");
 	gtk_container_add (GTK_CONTAINER (contentArea), colVarLabel);
-	colVarAdjustment = gtk_adjustment_new (3, 1, 16, 1, 5, 5);
+	colVarAdjustment = gtk_adjustment_new (speckleParams.colVar, 1, 255, 1, 5, 5);
    colVarSpin = gtk_spin_button_new (GTK_ADJUSTMENT (colVarAdjustment), 1, 0);
+	g_signal_connect (
+		colVarAdjustment, "value_changed",
+   	G_CALLBACK (gimp_int_adjustment_update),
+		&speckleParams.colVar
+	);
 	gtk_container_add (GTK_CONTAINER (contentArea), colVarSpin);
+
 	// The seed widget
 	seedLabel = gtk_label_new ("Random seed:");
 	gtk_container_add (GTK_CONTAINER (contentArea), seedLabel);
-	seedAdjustment = gtk_adjustment_new (3, 1, 16, 1, 5, 5);
+	seedAdjustment = gtk_adjustment_new (speckleParams.seed, 0, 111111, 1, 10, 10);
    seedSpin = gtk_spin_button_new (GTK_ADJUSTMENT (seedAdjustment), 1, 0);
+	g_signal_connect (
+		seedAdjustment, "value_changed",
+   	G_CALLBACK (gimp_int_adjustment_update),
+		&speckleParams.seed
+	);
 	gtk_container_add (GTK_CONTAINER (contentArea), seedSpin);
  
 	gtk_widget_show_all(dialog);
 
 	// Show and run dialog, WAIT for user action!!!
-	gtk_widget_show(dialog);
+	//gtk_widget_show(dialog);
 	run = (gimp_dialog_run (GIMP_DIALOG (dialog)) == GTK_RESPONSE_OK);
 	
 	// User action has happend, now destroy widget and free all its resources used
