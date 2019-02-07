@@ -52,37 +52,92 @@ static void query (void) {
 	}; // of GimpParamDerf args[] = ...
 
 	gimp_install_procedure (
-		"plug-in-speckle",									// func. name
-		"Speckle!",									// window title
+		"plug-in-speckle",										// func. name
+		"Speckle!",													// window title
 		"Speckle drawable with given brush and color",	// plugin description
-		"Uwe Hoffmann",										// author
-		"Copyright Uwe Hoffmann",						// copyright notice
-		"2019",												// date created
-		"_Speckle",								// menu entry name
-		"RGB*, GRAY*",										// image types to work with
-		GIMP_PLUGIN,										// declare this program as external plugin(NOT in core)
+		"Uwe Hoffmann",											// author
+		"Copyright Uwe Hoffmann",								// copyright notice
+		"2019",														// date created
+		"_Speckle",													// menu entry name
+		"RGB*, GRAY*",												// image types to work with
+		GIMP_PLUGIN,												// declare external plugin (NOT in core)
 		G_N_ELEMENTS (args), 0,
 		args, NULL
 	);
 
 	gimp_plugin_menu_register ("plug-in-speckle","<Image>/Uwes-Plugins");
 
-} // of static void query(void)...
+} // of static void query(void)... ---------------------------------------------
+
+/*******************************************************************************
+ ** Create a VERY simple dialog for the bare plugin...
+ */
 
 static gboolean showDialog() {
 
-	GtkWidget *dialog;
-	gboolean run;
+	GtkWidget 	*dialog;
+	GtkWidget 	*seedLabel, *seedSpin, *numSpecklesLabel, *numSpecklesSpin,
+					*sizeVarLabel, *sizeVarSpin, *colVarLabel, *colVarSpin,
+					*contentArea;
+	GtkObject 	*seedAdjustment, *numSpecklesAdjustment,
+					*sizeVarAdjustment, *colVarAdjustment;
+	gboolean 	run;
 
 	// Setup and initialize the whole Gimp GTK+ bunch, without it plugin will crash!
 	gimp_ui_init("speckle", FALSE);
 
 	// Create dialog
 	dialog = gimp_dialog_new(
-		"Speckle", "speckle",	NULL, 0,	gimp_standard_help_func, "plug-in-speckle",
-		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,	GTK_STOCK_OK, GTK_RESPONSE_OK,
-		NULL
+		"Speckle", "speckle", NULL, 0, 0, "plug-in-speckle",
+		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,	GTK_STOCK_OK, GTK_RESPONSE_OK, NULL
 	);
+
+	// Get content area of dialog to place widgets
+	contentArea = gtk_dialog_get_content_area(GTK_DIALOG (dialog));
+
+	// The numSpeckles widget: fully commented as example ///////////////////////
+
+	// define label
+	numSpecklesLabel = gtk_label_new ("Number of speckles:");
+	// add label to widget
+	gtk_container_add (GTK_CONTAINER (contentArea), numSpecklesLabel);
+	// define adjustment for the spin-control (GTK-specific)
+	numSpecklesAdjustment = gtk_adjustment_new (speckleParams.numSpeckles, 10, 1111, 1, 10, 10);
+	// define widget and add adjustment to it
+   numSpecklesSpin = gtk_spin_button_new (GTK_ADJUSTMENT (numSpecklesAdjustment), 1, 0);
+	// add a connector to read the value into the speckleParams struct
+	g_signal_connect (numSpecklesAdjustment, "value_changed",
+   	G_CALLBACK (gimp_int_adjustment_update),
+		&speckleParams.numSpeckles
+	);
+	// now put all this into dialog's content area 
+	gtk_container_add (GTK_CONTAINER (contentArea), numSpecklesSpin);
+	
+	// The sizeVar widget ///////////////////////////////////////////////////////
+
+	sizeVarLabel = gtk_label_new ("Size variation (0-100 pixel):");
+	gtk_container_add (GTK_CONTAINER (contentArea), sizeVarLabel);
+	sizeVarAdjustment = gtk_adjustment_new (speckleParams.sizeVar, 0, 100, 1, 5, 5);
+   sizeVarSpin = gtk_spin_button_new (GTK_ADJUSTMENT (sizeVarAdjustment), 1, 0);
+	g_signal_connect (sizeVarAdjustment, "value_changed",
+   	G_CALLBACK (gimp_int_adjustment_update),
+		&speckleParams.sizeVar
+	);
+	gtk_container_add (GTK_CONTAINER (contentArea), sizeVarSpin);
+	// The colVar widget
+	colVarLabel = gtk_label_new ("Intensity variation (0-255):");
+	gtk_container_add (GTK_CONTAINER (contentArea), colVarLabel);
+	colVarAdjustment = gtk_adjustment_new (3, 1, 16, 1, 5, 5);
+   colVarSpin = gtk_spin_button_new (GTK_ADJUSTMENT (colVarAdjustment), 1, 0);
+	gtk_container_add (GTK_CONTAINER (contentArea), colVarSpin);
+	// The seed widget
+	seedLabel = gtk_label_new ("Random seed:");
+	gtk_container_add (GTK_CONTAINER (contentArea), seedLabel);
+	seedAdjustment = gtk_adjustment_new (3, 1, 16, 1, 5, 5);
+   seedSpin = gtk_spin_button_new (GTK_ADJUSTMENT (seedAdjustment), 1, 0);
+	gtk_container_add (GTK_CONTAINER (contentArea), seedSpin);
+ 
+	gtk_widget_show_all(dialog);
 
 	// Show and run dialog, WAIT for user action!!!
 	gtk_widget_show(dialog);
@@ -93,7 +148,7 @@ static gboolean showDialog() {
 	gtk_widget_destroy(dialog);
 	return run; // return result of the dialog (=TRUE/FALSE)!
 
-} // of showDialog()...
+} // of showDialog()... --------------------------------------------------------
 
 /*******************************************************************************
  ** run: main actions of the plugin.
@@ -162,21 +217,35 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 	srand(speckleParams.seed);
 	gimp_context_get_foreground(&startRGB);
 	brushSize = gimp_context_get_brush_size();
-	
+
+	// prepare status line to show progress infos
+	gimp_progress_init ("Speckle...");
+
 	// Loop over all speckles
 	for (int i = 0; i < speckleParams.numSpeckles; i++) {
+		
+		// calc speckle position
 		speckleX = rand() % drawableWidth;
 		speckleY = rand() % drawableHeight;
+		// calc new random brightness variation from 0-1
 		speckleCol = rand() % speckleParams.colVar/(speckleParams.colVar*1.0);
+		// subtract the brightness variation from the start color
+		// and store result in &itemRGB
 		itemRGB = startRGB;
 		gimp_rgb_set(&workRGB, speckleCol, speckleCol, speckleCol);
 		gimp_rgb_subtract(&itemRGB, &workRGB);
+		// make a speckle with active brush in the calculated color
+		// and a random size variation
 		points[0] = speckleX;
 		points[1] = speckleY;
 		gimp_context_set_foreground(&itemRGB);
 		gimp_context_set_brush_size(brushSize + rand() % speckleParams.sizeVar);
 		gimp_paintbrush_default(drawableID, 2, points);
-	}
+		// show progress in status line
+		if (i % (speckleParams.numSpeckles/20) == 0)
+			gimp_progress_update ((gdouble) i / (gdouble) (speckleParams.numSpeckles));
+
+	} // calculate next speckle in for (... loop
 
 	gimp_image_undo_group_end(imageID);
 	gimp_context_pop();
@@ -189,5 +258,5 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 	
 	/* End of main actions context */
 
-} // of static void run ...
+} // of static void run ... ----------------------------------------------------
 
