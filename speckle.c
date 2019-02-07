@@ -6,25 +6,20 @@
  *****************************************************************************/
 
 #include <libgimp/gimp.h>
+#include <libgimp/gimpui.h>
 
-// Define the parameters to be saved for later reuse of plugin
+// The parameters and predefinitions (are saved for reuse at the end of plugin!)
 
 static struct {
-
-  guint numSpeckles, sizeVar, colVar, seed;
-
+	guint numSpeckles, sizeVar, colVar, seed;
 } speckleParams  = {
-
-  .numSpeckles = 300,
-  .sizeVar = 10,
-  .colVar = 128,
-  .seed = 1111
-
+	300, 10, 128, 1111 
 };
 
 // Declaration of the mandatory plugin functions
 
 static void query (void);
+static gboolean showDialog();
 static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint *nreturn_vals, GimpParam **return_vals);
 
 // This structure declaration is also mandatory
@@ -72,7 +67,33 @@ static void query (void) {
 
 	gimp_plugin_menu_register ("plug-in-speckle","<Image>/Uwes-Plugins");
 
-} //static void query(void)...
+} // of static void query(void)...
+
+static gboolean showDialog() {
+
+	GtkWidget *dialog;
+	gboolean run;
+
+	// Setup and initialize the whole Gimp GTK+ bunch, without it plugin will crash!
+	gimp_ui_init("speckle", FALSE);
+
+	// Create dialog
+	dialog = gimp_dialog_new(
+		"Speckle", "speckle",	NULL, 0,	gimp_standard_help_func, "plug-in-speckle",
+		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,	GTK_STOCK_OK, GTK_RESPONSE_OK,
+		NULL
+	);
+
+	// Show and run dialog, WAIT for user action!!!
+	gtk_widget_show(dialog);
+	run = (gimp_dialog_run (GIMP_DIALOG (dialog)) == GTK_RESPONSE_OK);
+	
+	// User action has happend, now destroy widget and free all its resources used
+	// and return to make some further action
+	gtk_widget_destroy(dialog);
+	return run; // return result of the dialog (=TRUE/FALSE)!
+
+} // of showDialog()...
 
 /*******************************************************************************
  ** run: main actions of the plugin.
@@ -88,7 +109,6 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 	guint				drawableHeight,  drawableWidth, imageID, drawableID,
 						speckleX, speckleY ;
 	gfloat speckleCol;
-	int i;
 	gdouble points[2];
 	gdouble brushSize;
 
@@ -103,28 +123,20 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 	imageID		= param[1].data.d_int32;
 	drawableID	= param[2].data.d_int32;
 
-	drawableWidth	= gimp_drawable_width(drawableID);
-	drawableHeight = gimp_drawable_height(drawableID);
-
-	// Begin the main actions context
-
-	gimp_context_push();
-	gimp_image_undo_group_start(imageID);
-
 	switch (run_mode) {
 
 		case GIMP_RUN_INTERACTIVE:
 			// Get options last values if needed
 			gimp_get_data ("plug-in-speckle", &speckleParams);
 
-			// Display the dialog
-			//if (! blur_dialog (drawable))
-		  	//return;
+			// Display the dialog and break if necessary!
+			if (! showDialog ())
+				return;
 			break;
 
 		case GIMP_RUN_NONINTERACTIVE:
 			if (nparams != 7)
-			  status = GIMP_PDB_CALLING_ERROR;
+			  status = GIMP_PDB_CALLING_ERROR; 
 			if (status == GIMP_PDB_SUCCESS)
 		  		speckleParams.numSpeckles	= param[3].data.d_int32;
 				speckleParams.sizeVar		= param[4].data.d_int32;
@@ -140,13 +152,19 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 		default:	break;
 	}	
 
+	drawableWidth	= gimp_drawable_width(drawableID);
+	drawableHeight = gimp_drawable_height(drawableID);
+
+	// Begin the main actions context 
+
+	gimp_context_push();
+	gimp_image_undo_group_start(imageID);
 	srand(speckleParams.seed);
 	gimp_context_get_foreground(&startRGB);
 	brushSize = gimp_context_get_brush_size();
 	
-	//numSpeckles = 300;
-
-	for (i = 0; i < speckleParams.numSpeckles; i++) {
+	// Loop over all speckles
+	for (int i = 0; i < speckleParams.numSpeckles; i++) {
 		speckleX = rand() % drawableWidth;
 		speckleY = rand() % drawableHeight;
 		speckleCol = rand() % speckleParams.colVar/(speckleParams.colVar*1.0);
@@ -161,16 +179,15 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 	}
 
 	gimp_image_undo_group_end(imageID);
-	
 	gimp_context_pop();
 	gimp_displays_flush ();
 	//	gimp_drawable_detach (drawableID);
 
-	/* End of main actions context */
-
-	//  Finally, set options in the core
+	//  Finally, save and set options in the core
 	if (run_mode == GIMP_RUN_INTERACTIVE)
 		gimp_set_data ("plug-in-speckle", &speckleParams, sizeof (speckleParams));
+	
+	/* End of main actions context */
 
 } // of static void run ...
 
