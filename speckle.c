@@ -1,7 +1,7 @@
 /** speckle.c *****************************************************************
  *
  * 'Speckle' with the current brush and color on the current drawable.
- *  Size and color can be varied pseudo-randomly.
+ *  Size and brightness can be varied pseudo-randomly.
  *
  *****************************************************************************/
 
@@ -176,10 +176,9 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 	GimpRunMode		run_mode;
 	GimpDrawable	*drawable;
 	GimpRGB			itemRGB, startRGB, workRGB;
-	guint				drawableHeight,  drawableWidth, imageID, drawableID,
-						speckleX, speckleY ;
+	guint				drawableHeight,  drawableWidth, imageID, drawableID;
 	gfloat speckleCol;
-	gdouble points[2];
+	gdouble point[2];
 	gdouble brushSize;
 
 	// Setting mandatory output values
@@ -240,8 +239,8 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 	for (int i = 0; i < speckleParams.numSpeckles; i++) {
 		
 		// calc speckle position
-		speckleX = rand() % drawableWidth;
-		speckleY = rand() % drawableHeight;
+		point[0] = rand() % drawableWidth;
+		point[1] = rand() % drawableHeight;
 		// calc new random brightness variation from 0-1
 		speckleCol = rand() % speckleParams.colVar/(speckleParams.colVar*1.0);
 		// subtract the brightness variation from the start color
@@ -251,11 +250,9 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 		gimp_rgb_subtract(&itemRGB, &workRGB);
 		// make a speckle with active brush in the calculated color
 		// and a random size variation
-		points[0] = speckleX;
-		points[1] = speckleY;
 		gimp_context_set_foreground(&itemRGB);
 		gimp_context_set_brush_size(brushSize + rand() % speckleParams.sizeVar);
-		gimp_paintbrush_default(drawableID, 2, points);
+		gimp_paintbrush_default(drawableID, 2, point);
 		// show progress in status line
 		if (i % (speckleParams.numSpeckles/20) == 0)
 			gimp_progress_update ((gdouble) i / (gdouble) (speckleParams.numSpeckles));
