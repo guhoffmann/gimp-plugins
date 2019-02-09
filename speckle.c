@@ -194,7 +194,9 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 	GimpRunMode			run_mode;
 	GimpDrawable		*drawable;
 	GimpRGB				itemRGB, startRGB, workRGB;
-	guint					drawableHeight,  drawableWidth, imageID, drawableID;
+	gint					drawableHeight, drawableWidth, startX, startY, imageID, drawableID,
+							selectionX1, selectionY1, selectionX2, selectionY2;
+	gboolean				selectionActive;
 	gfloat 				speckleCol;
 	gdouble 				point[2];
 	gdouble 				brushSize;
@@ -237,11 +239,28 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 			gimp_get_data ("plug-in-speckle", &speckleParams);
 			break;
 
-		default:	break;
+		default:	break; 
 	}	
 
-	drawableWidth	= gimp_drawable_width(drawableID);
-	drawableHeight = gimp_drawable_height(drawableID);
+	// check if there is a selection active and
+	// adjust the output values
+	//startX = 0;	startY = 0;	drawableWidth= gimp_drawable_width(drawableID);	drawableHeight = gimp_drawable_height(drawableID);
+
+	gimp_selection_bounds(imageID, &selectionActive, &selectionX1, &selectionY1, &selectionX2, &selectionY2);
+
+	if (selectionActive) {
+
+		startX = selectionX1;
+		startY = selectionY1;
+		drawableWidth  = selectionX2 - selectionX1;
+		drawableHeight = selectionY2 - selectionY1;
+
+	} else {
+		startX = 0;
+		startY = 0;
+		drawableWidth	= gimp_drawable_width(drawableID);
+		drawableHeight = gimp_drawable_height(drawableID);
+	}
 
 	// begin the main actions context 
 
@@ -260,8 +279,8 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 	for (int i = 0; i < speckleParams.numSpeckles; i++) {
 		
 		// calc speckle position
-		point[0] = rand() % drawableWidth;
-		point[1] = rand() % drawableHeight;
+		point[0] = rand() % drawableWidth + startX;
+		point[1] = rand() % drawableHeight + startY;
 		// calc new random brightness variation from 0-1
 		speckleCol = rand() % speckleParams.colVar/(speckleParams.colVar*1.0);
 		// subtract the brightness variation from the start color
