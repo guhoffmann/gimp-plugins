@@ -64,7 +64,8 @@ static void query (void) {
 
 		"plug-in-speckle",										// func. name
 		"Speckle!",													// window title
-		"Speckle drawable with given brush and color",	// plugin description
+		"Speckle drawable with given brush and color \
+- Version 19.02.09 -",	// plugin description
 		"Uwe Hoffmann",											// author
 		"Copyright Uwe Hoffmann",								// copyright notice
 		"2019",														// date created
