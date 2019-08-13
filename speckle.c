@@ -1,4 +1,6 @@
 /** speckle.c *****************************************************************
+ * 
+ * (C) guhoffmann 190813
  *
  * 'Speckle' with the current brush and color on the current drawable.
  *  Size and brightness can be varied pseudo-randomly.
