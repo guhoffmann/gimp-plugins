@@ -192,17 +192,17 @@ static gboolean showDialog() {
 
 static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint *nreturn_vals, GimpParam **return_vals) {
 
-	static GimpParam  values[1];
+	static GimpParam  	values[1];
 	GimpPDBStatusType	status = GIMP_PDB_SUCCESS;
 	GimpRunMode			run_mode;
 	GimpDrawable		*drawable;
 	GimpRGB				itemRGB, startRGB, workRGB;
-	gint					drawableHeight, drawableWidth, startX, startY, imageID, drawableID,
-							selectionX1, selectionY1, selectionX2, selectionY2;
-	gboolean				selectionActive;
+	gint				drawableHeight, drawableWidth, startX, startY, imageID, drawableID,
+						selectionX1, selectionY1, selectionX2, selectionY2;
+	gboolean			selectionActive;
 	gfloat 				speckleCol;
-	gdouble 				point[2];
-	gdouble 				brushSize;
+	gdouble 			point[2];
+	gdouble 			brushSize;
 
 	// setting mandatory output values
 
@@ -233,7 +233,7 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 			if (status == GIMP_PDB_SUCCESS)
 		  		speckleParams.numSpeckles	= param[3].data.d_int32;
 				speckleParams.sizeVar		= param[4].data.d_int32;
-				speckleParams.colVar			= param[5].data.d_int32;
+				speckleParams.colVar		= param[5].data.d_int32;
 				speckleParams.seed			= param[6].data.d_int32;
 			break;
 
@@ -252,7 +252,6 @@ static void run (	const gchar *name, gint nparams,	const GimpParam *param,	gint 
 	gimp_selection_bounds(imageID, &selectionActive, &selectionX1, &selectionY1, &selectionX2, &selectionY2);
 
 	if (selectionActive) {
-
 		startX = selectionX1;
 		startY = selectionY1;
 		drawableWidth  = selectionX2 - selectionX1;
